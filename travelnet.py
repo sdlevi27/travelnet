@@ -7,6 +7,21 @@ import csv
 
 from math import cos,radians,sin,pow,asin,sqrt
 
+def getNRMedallion(miles, segments):
+
+    if miles < 24999 or segments < 30:
+        return "Member"
+    elif (miles > 24999 and miles < 50000) or (segments > 29 and segments < 60):
+        return "Silver"
+    elif (miles > 49999 and miles < 75000) or (segments > 59 and segments < 90):
+        return "Gold"
+    elif (miles > 74999 and miles < 125000) or (segments > 89 and segments < 120):
+        return "Platinum"
+    elif (miles > 124999) or (segments > 119):
+        return "Diamond"
+    else:
+        return "UNKNOWN"
+
 def distance(src_airport,lat1, long1, dest_airport,lat2, long2):
     radius = 3959 # radius of the earth in miles, roughly https://en.wikipedia.org/wiki/Earth_radius
 
@@ -27,7 +42,8 @@ def distance(src_airport,lat1, long1, dest_airport,lat2, long2):
 lats = {}
 longs = {}
 data = defaultdict(list)
-totals = defaultdict(list)
+totalsByYear = defaultdict(list)
+totalLifetime = defaultdict(list)
 
 # Read the airports.dat file to populate the latts and longs Maps
 f = open("airports.dat")
@@ -48,11 +64,13 @@ for row in csv.reader(f):
         travel_date = row[4]
         travel_month, travel_date, travel_year = travel_date.split("/")
 
+        # Travelnet exports the trip as origin and destination (ie: RDU/ATL)
+        # split the field into 2 strings
         travel_day = row[4]
         city_pair = row[5]
         source_airport, dest_airport = city_pair.split("/")
 
-        # Travelnet exports the trip as origin and destination (ie: RDU/ATL)
+        # calculate distance as miles_traveled
         if source_airport in lats and dest_airport in lats:
             source_lat = lats[source_airport]
             source_long = longs[source_airport]
@@ -75,7 +93,8 @@ for row in csv.reader(f):
                 "miles_earned": miles_earned
             }
 
-            data[pass_rider].append(trip)
+            pass_rider_year = pass_rider + "-" + "20" + travel_year
+            data[pass_rider_year].append(trip)
 
 #print tabulate(trips, headers=table_headers, tablefmt='orgtbl')
 #print("Date\tFrom\tTo\tActual Miles Flown\tMQMs")
@@ -83,35 +102,70 @@ for row in csv.reader(f):
 
 for pass_rider in data.keys():
     print ("Pass Rider: ", pass_rider)
-    table_headers = ["Skymiles Year", "Date", "From", "To", "Actual Miles Flown", "MQMs"]
+    print ("----------------------------------------------------------------------------------------------------------------------------")
+    table_headers = ["Skymiles Year", "Date", "\tFrom", "\tTo", "Actual Miles Flown", "MQMs"]
     print (*table_headers, sep='\t\t')
 
-    # Initialize the pass rider's mileage
+    # Initialize the pass rider's mileage by year
+    if not pass_rider in totalsByYear:
+        totalsByYear[pass_rider] = {}
+        totalsByYear[pass_rider]['total_miles_traveled'] = 0
+        totalsByYear[pass_rider]['total_miles_earned'] = 0
+
     miles = {
         "total_miles_traveled": 0,
         "total_miles_earned": 0
     }
-    totals[pass_rider]= miles
 
+    totalsByYear[pass_rider]= miles
+
+    # For each trip, display the trip and calculate milage
     for trip in data[pass_rider]:
         #print (trip[0],trip[1],trip[2],trip[3], sep='\t')
-        print ("20"+trip['travel_year'], trip['travel_date'],trip['source_airport'],trip['dest_airport'],trip['miles_traveled'],trip['miles_earned'], sep='\t\t')
+        print ("20"+trip['travel_year'], trip['travel_date'],trip['source_airport'],trip['dest_airport'],trip['miles_traveled'],trip['miles_earned'], sep='\t\t\t')
 
         miles = {
-            "total_miles_traveled": totals[pass_rider]['total_miles_traveled'] + trip['miles_traveled'],
-            "total_miles_earned": totals[pass_rider]['total_miles_earned'] + trip['miles_earned']
+            "total_miles_traveled": totalsByYear[pass_rider]['total_miles_traveled'] + trip['miles_traveled'],
+            "total_miles_earned": totalsByYear[pass_rider]['total_miles_earned'] + trip['miles_earned']
         }
+        totalsByYear[pass_rider] = miles
 
-        totals[pass_rider] = miles
     print ("")
 
 print ("")
 
-table_headers = ["Pass Rider", "Miles Traveled", "MQMs Earned"]
+table_headers = ["Pass Rider by Year", "Miles Traveled", "MQMs Earned", "Segments", "Non-Rev Medallion Status"]
 print (*table_headers, sep='\t\t')
+print ("-------------------------------------------------------------------------------------------------")
 
-for pass_rider in totals.keys():
-    print(pass_rider, totals[pass_rider]['total_miles_traveled'], totals[pass_rider]['total_miles_earned'], sep='\t\t')
+for pass_rider in sorted(totalsByYear.keys()):
+
+    print(pass_rider, totalsByYear[pass_rider]['total_miles_traveled'], totalsByYear[pass_rider]['total_miles_earned'],len(data[pass_rider]), getNRMedallion(totalsByYear[pass_rider]['total_miles_earned'], len(data[pass_rider])), sep='\t\t\t')
+
+    pass_rider_name, pass_rider_year = pass_rider.split("-")
+
+    if not pass_rider_name in totalLifetime:
+        totalLifetime[pass_rider_name] = {}
+        totalLifetime[pass_rider_name]['total_miles_traveled'] = 0
+        totalLifetime[pass_rider_name]['total_miles_earned'] = 0
+        totalLifetime[pass_rider_name]['segments'] = 0
+
+    miles = {
+        "total_miles_traveled": int(totalLifetime[pass_rider_name]['total_miles_traveled']) + int(totalsByYear[pass_rider]['total_miles_traveled']),
+        "total_miles_earned": int(totalLifetime[pass_rider_name]['total_miles_earned']) + int(totalsByYear[pass_rider]['total_miles_earned']),
+        "segments": int(totalLifetime[pass_rider_name]['segments']) + int(len(data[pass_rider]))
+    }
+
+    totalLifetime[pass_rider_name] = miles
+
+print ("")
+
+table_headers = ["Pass Rider (Lifetime)", "Miles Traveled", "MQMs Earned", "Segments"]
+print (*table_headers, sep='\t\t')
+print ("-------------------------------------------------------------------------------------------------")
+
+for pass_rider in totalLifetime.keys():
+    print(pass_rider, totalLifetime[pass_rider]['total_miles_traveled'], totalLifetime[pass_rider]['total_miles_earned'], totalLifetime[pass_rider]['segments'], sep='\t\t\t\t')
 
 #print ("")
 #print ("Total Distance Traveled (miles): ", "{:,}".format(total_miles_traveled))
