@@ -9,18 +9,24 @@ from math import cos,radians,sin,pow,asin,sqrt
 
 def getNRMedallion(miles, segments):
 
+    status = "UNKNOWN"
+
+    print("miles: ",miles,"segs:",segments)
+
     if miles < 24999 or segments < 30:
-        return "Member"
+        status = "Member"
     elif (miles > 24999 and miles < 50000) or (segments > 29 and segments < 60):
-        return "Silver"
+        status = "Silver"
     elif (miles > 49999 and miles < 75000) or (segments > 59 and segments < 90):
-        return "Gold"
+        status = "Gold"
     elif (miles > 74999 and miles < 125000) or (segments > 89 and segments < 120):
-        return "Platinum"
+        status = "Platinum"
     elif (miles > 124999) or (segments > 119):
-        return "Diamond"
+        status = "Diamond"
     else:
-        return "UNKNOWN"
+        status = "Error!"
+
+    return status
 
 def distance(src_airport,lat1, long1, dest_airport,lat2, long2):
     radius = 3959 # radius of the earth in miles, roughly https://en.wikipedia.org/wiki/Earth_radius
@@ -136,7 +142,7 @@ print ("")
 
 table_headers = ["Pass Rider by Year", "Miles Traveled", "MQMs Earned", "Segments", "Non-Rev Medallion Status"]
 print (*table_headers, sep='\t\t')
-print ("-------------------------------------------------------------------------------------------------")
+print ("--------------------------------------------------------------------------------------------------------------------------------")
 
 for pass_rider in sorted(totalsByYear.keys()):
 
