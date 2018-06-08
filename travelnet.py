@@ -11,8 +11,6 @@ def getNRMedallion(miles, segments):
 
     status = "UNKNOWN"
 
-    print("miles: ",miles,"segs:",segments)
-
     if miles < 24999 or segments < 30:
         status = "Member"
     elif (miles > 24999 and miles < 50000) or (segments > 29 and segments < 60):
@@ -166,12 +164,12 @@ for pass_rider in sorted(totalsByYear.keys()):
 
 print ("")
 
-table_headers = ["Pass Rider (Lifetime)", "Miles Traveled", "MQMs Earned", "Segments"]
+table_headers = ["Pass Rider (Lifetime)", "Miles Traveled", "Segments"]
 print (*table_headers, sep='\t\t')
 print ("-------------------------------------------------------------------------------------------------")
 
 for pass_rider in totalLifetime.keys():
-    print(pass_rider, totalLifetime[pass_rider]['total_miles_traveled'], totalLifetime[pass_rider]['total_miles_earned'], totalLifetime[pass_rider]['segments'], sep='\t\t\t\t')
+    print(pass_rider, totalLifetime[pass_rider]['total_miles_traveled'], totalLifetime[pass_rider]['segments'], sep='\t\t\t\t')
 
 #print ("")
 #print ("Total Distance Traveled (miles): ", "{:,}".format(total_miles_traveled))
